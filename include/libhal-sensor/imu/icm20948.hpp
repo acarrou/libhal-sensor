@@ -27,43 +27,6 @@ namespace hal::sensor {
 class icm20948
 {
 public:
-  enum class cycle : hal::byte
-  {
-    no_cycle = 0x00,
-    gyro_cycle = 0x10,
-    acc_cycle = 0x20,
-    acc_gyro_cycle = 0x30,
-    acc_gyro_i2c_mst_cycle = 0x70
-  };
-
-  enum class int_pin_pol : hal::byte
-  {
-    act_high,
-    act_low
-  };
-
-  enum class int_type : hal::byte
-  {
-    fsync_int = 0x01,
-    wom_int = 0x02,
-    dmp_int = 0x04,
-    data_ready_int = 0x08,
-    fifo_ovf_int = 0x10,
-    fifo_wm_int = 0x20
-  };
-
-  enum class fifo_type : hal::byte
-  {
-    fifo_acc = 0x10,
-    fifo_gyr = 0x0E,
-    fifo_acc_gyr = 0x1E
-  };
-
-  enum fifo_mode_choice : hal::byte
-  {
-    continuous,
-    stop_when_full
-  };
 
   enum gyro_range : hal::byte
   {
@@ -86,38 +49,12 @@ public:
     dlpf_off
   };
 
-  enum gyro_avg_low_power : hal::byte
-  {
-    gyro_avg_1,
-    gyro_avg_2,
-    gyro_avg_4,
-    gyro_avg_8,
-    gyro_avg_16,
-    gyro_avg_32,
-    gyro_avg_64,
-    gyro_avg_128
-  };
-
   enum acc_range : hal::byte
   {
     acc_range_2g,
     acc_range_4g,
     acc_range_8g,
     acc_range_16g
-  };
-
-  enum acc_avg_low_power : hal::byte
-  {
-    acc_avg_4,
-    acc_avg_8,
-    acc_avg_16,
-    acc_avg_32
-  };
-
-  enum wom_comp : hal::byte
-  {
-    wom_comp_disable,
-    wom_comp_enable
   };
 
   enum ak09916_op_mode : hal::byte
@@ -128,16 +65,6 @@ public:
     ak09916_cont_mode_20hz = 0x04,
     ak09916_cont_mode_50hz = 0x06,
     ak09916_cont_mode_100hz = 0x08
-  };
-
-  enum orientation : hal::byte
-  {
-    flat,
-    flat_1,
-    xy,
-    xy_1,
-    yx,
-    yx_1
   };
 
   struct accel_read_t
@@ -250,36 +177,19 @@ public:
   void enable_acc(bool p_en_acc);
   void set_acc_range(acc_range p_acc_range);
   void set_acc_dlpf(digital_lowpass_filter p_dlpf);
-  void set_acc_sample_rate_div(uint16_t p_acc_spl_rate_div);
   void enable_gyro(bool p_enable_gyro);
-  [[deprecated("Use the API `enable_gyro()` with a full name.")]]
-  void enable_gyr(bool p_enable_gyro)
-  {
-    enable_gyro(p_enable_gyro);
-  }
   void set_gyro_range(gyro_range p_gyro_range);
   void set_gyro_dlpf(digital_lowpass_filter p_dlpf);
-  void set_gyro_sample_rate_div(hal::byte p_gyro_spl_rate_div);
   void set_temp_dlpf(digital_lowpass_filter p_dlpf);
 
   /* Power, Sleep, Standby */
-  void enable_cycle(cycle p_cycle);
-  void enable_low_power(bool p_enable_low_power);
-  void set_gyro_averg_cycle_mode(gyro_avg_low_power p_avg);
-  void set_acc_averg_cycle_mode(acc_avg_low_power p_avg);
   void sleep(bool p_sleep);
 
   /* Magnetometer */
   void init_mag();
   void enable_bypass_mode();
-  hal::byte mag_status1();
-  hal::byte mag_status2();
   void reset_mag();
-  hal::byte check_mag_mode();
-  hal::byte whoami_ak09916_wia1_direct();
-  hal::byte whoami_ak09916_wia2_direct();
   void set_mag_op_mode(ak09916_op_mode p_op_mode);
-  void write_ak09916_register8(hal::byte p_reg, hal::byte p_val);
 
 private:
   void set_clock_auto_select();

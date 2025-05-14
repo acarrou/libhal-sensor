@@ -25,78 +25,26 @@ namespace {
 static constexpr hal::byte icm20948_address = 0x69;
 static constexpr hal::byte ak09916_address = 0x0C;
 
-/* Registers ICM20948 USER BANK 0*/
+/* Registers ICM20948 USER BANK 0 */
 constexpr hal::byte who_am_i = 0x00;
-[[maybe_unused]] constexpr hal::byte user_ctrl = 0x03;
-constexpr hal::byte lp_config = 0x05;
 constexpr hal::byte pwr_mgmt_1 = 0x06;
 constexpr hal::byte pwr_mgmt_2 = 0x07;
 constexpr hal::byte int_pin_cfg = 0x0F;
-[[maybe_unused]] constexpr hal::byte int_enable = 0x10;
-[[maybe_unused]] constexpr hal::byte int_enable_1 = 0x11;
-[[maybe_unused]] constexpr hal::byte int_enable_2 = 0x12;
-[[maybe_unused]] constexpr hal::byte int_enable_3 = 0x13;
-[[maybe_unused]] constexpr hal::byte i2c_mst_status = 0x17;
-[[maybe_unused]] constexpr hal::byte int_status = 0x19;
-[[maybe_unused]] constexpr hal::byte int_status_1 = 0x1A;
-[[maybe_unused]] constexpr hal::byte int_status_2 = 0x1B;
-[[maybe_unused]] constexpr hal::byte int_status_3 = 0x1C;
-[[maybe_unused]] constexpr hal::byte delay_time_h = 0x28;
-[[maybe_unused]] constexpr hal::byte delay_time_l = 0x29;
 constexpr hal::byte accel_out = 0x2D;  // accel data registers begin
 constexpr hal::byte gyro_out = 0x33;   // gyro data registers begin
 constexpr hal::byte temp_out = 0x39;
-[[maybe_unused]] constexpr hal::byte ext_slv_sens_data_00 = 0x3B;
-[[maybe_unused]] constexpr hal::byte ext_slv_sens_data_01 = 0x3C;
-[[maybe_unused]] constexpr hal::byte fifo_en_1 = 0x66;
-[[maybe_unused]] constexpr hal::byte fifo_en_2 = 0x67;
-[[maybe_unused]] constexpr hal::byte fifo_rst = 0x68;
-[[maybe_unused]] constexpr hal::byte fifo_mode = 0x69;
-[[maybe_unused]] constexpr hal::byte fifo_count = 0x70;
-[[maybe_unused]] constexpr hal::byte fifo_r_w = 0x72;
-[[maybe_unused]] constexpr hal::byte data_rdy_status = 0x74;
-[[maybe_unused]] constexpr hal::byte fifo_cfg = 0x76;
 
-/* Registers ICM20948 USER BANK 1*/
-[[maybe_unused]] constexpr hal::byte self_test_x_gyro = 0x02;
-[[maybe_unused]] constexpr hal::byte self_test_y_gyro = 0x03;
-[[maybe_unused]] constexpr hal::byte self_test_z_gyro = 0x04;
-[[maybe_unused]] constexpr hal::byte self_test_x_accel = 0x0E;
-[[maybe_unused]] constexpr hal::byte self_test_y_accel = 0x0F;
-[[maybe_unused]] constexpr hal::byte self_test_z_accel = 0x10;
-[[maybe_unused]] constexpr hal::byte xa_offs_h = 0x14;
-[[maybe_unused]] constexpr hal::byte xa_offs_l = 0x15;
-[[maybe_unused]] constexpr hal::byte ya_offs_h = 0x17;
-[[maybe_unused]] constexpr hal::byte ya_offs_l = 0x18;
-[[maybe_unused]] constexpr hal::byte za_offs_h = 0x1A;
-[[maybe_unused]] constexpr hal::byte za_offs_l = 0x1B;
-[[maybe_unused]] constexpr hal::byte timebase_corr_pll = 0x28;
-
-/* Registers ICM20948 USER BANK 2*/
+/* Registers ICM20948 USER BANK 2 */
 constexpr hal::byte gyro_smplrt_div = 0x00;
 constexpr hal::byte gyro_config_1 = 0x01;
 constexpr hal::byte gyro_config_2 = 0x02;
-[[maybe_unused]] constexpr hal::byte xg_offs_usrh = 0x03;
-[[maybe_unused]] constexpr hal::byte xg_offs_usrl = 0x04;
-[[maybe_unused]] constexpr hal::byte yg_offs_usrh = 0x05;
-[[maybe_unused]] constexpr hal::byte yg_offs_usrl = 0x06;
-[[maybe_unused]] constexpr hal::byte zg_offs_usrh = 0x07;
-[[maybe_unused]] constexpr hal::byte zg_offs_usrl = 0x08;
 constexpr hal::byte odr_align_en = 0x09;
 constexpr hal::byte accel_smplrt_div_1 = 0x10;
-[[maybe_unused]] constexpr hal::byte accel_smplrt_div_2 = 0x11;
-[[maybe_unused]] constexpr hal::byte accel_intel_ctrl = 0x12;
-[[maybe_unused]] constexpr hal::byte accel_wom_thr = 0x13;
 constexpr hal::byte accel_config = 0x14;
 constexpr hal::byte accel_config_2 = 0x15;
-[[maybe_unused]] constexpr hal::byte fsync_config = 0x52;
 constexpr hal::byte temp_config = 0x53;
-[[maybe_unused]] constexpr hal::byte mod_ctrl_usr = 0x54;
 
-/* Registers ICM20948 USER BANK 3*/
-[[maybe_unused]] constexpr hal::byte i2c_mst_odr_cfg = 0x00;
-[[maybe_unused]] constexpr hal::byte i2c_mst_ctrl = 0x01;
-[[maybe_unused]] constexpr hal::byte i2c_mst_delay_ctrl = 0x02;
+/* Registers ICM20948 USER BANK 3 */
 constexpr hal::byte i2c_slv0_addr = 0x03;
 constexpr hal::byte i2c_slv0_reg = 0x04;
 constexpr hal::byte i2c_slv0_ctrl = 0x05;
@@ -121,29 +69,14 @@ constexpr hal::byte ak09916_cntl_3 = 0x32;
 
 /* Register Bits */
 constexpr hal::byte icm_reset = 0x41;
-[[maybe_unused]] constexpr hal::byte i2c_mst_en = 0x20;
 constexpr hal::byte icm_sleep = 0x40;
-constexpr hal::byte lp_en = 0x20;
 constexpr hal::byte bypass_en = 0x02;
 constexpr hal::byte gyro_en = 0x07;
 constexpr hal::byte acc_en = 0x38;
-[[maybe_unused]] constexpr hal::byte fifo_en = 0x40;
-[[maybe_unused]] constexpr hal::byte int1_actl = 0x80;
-[[maybe_unused]] constexpr hal::byte int_1_latch_en = 0x20;
-[[maybe_unused]] constexpr hal::byte actl_fsync = 0x08;
-[[maybe_unused]] constexpr hal::byte int_anyrd_2clear = 0x10;
-[[maybe_unused]] constexpr hal::byte fsync_int_mode_en = 0x06;
-[[maybe_unused]] constexpr hal::byte ak09916_16_bit = 0x10;
-[[maybe_unused]] constexpr hal::byte ak09916_ovf = 0x08;
 constexpr hal::byte ak09916_read = 0x80;
 
-[[maybe_unused]] constexpr uint16_t ak09916_who_am_i_1 = 0x48;
-[[maybe_unused]] constexpr uint16_t ak09916_who_am_i_2 = 0x09;
-
 constexpr hal::byte who_am_i_content = 0xEA;
-[[maybe_unused]] constexpr auto room_temp_offset = 0.0f;
 constexpr auto t_sensitivity = 333.87f;
-[[maybe_unused]] constexpr auto ak09916_mag_lsb = 0.1495f;
 }  // namespace
 
 using namespace std::literals;
@@ -154,10 +87,13 @@ icm20948::icm20948(hal::i2c& p_i2c)
   m_current_bank = 0;
   reset_icm20948();
   reset_mag();
+
+  // Check device ID
   if (auto id = whoami(); id != who_am_i_content) {
     hal::safe_throw(hal::no_such_device(id, this));
   }
 
+  // Initialize offset and scaling factors
   m_acc_offset_val.x = 0.0;
   m_acc_offset_val.y = 0.0;
   m_acc_offset_val.z = 0.0;
@@ -170,11 +106,23 @@ icm20948::icm20948(hal::i2c& p_i2c)
   m_gyro_offset_val.z = 0.0;
   m_gyro_range_factor = 1.0;
 
+  // Power up and configure core sensors
   sleep(false);
+  set_clock_auto_select();
   enable_acc(true);
   enable_gyro(true);
 
+  // Configure sensor ranges
+  set_acc_range(acc_range_2g);    // Initialize with 2g range
+  set_gyro_range(gyro_range_250); // Initialize with 250 dps range
+  set_acc_dlpf(dlpf_6);          // Set low noise filter
+  set_gyro_dlpf(dlpf_6);         // Set low noise filter
+
+  // Enable ODR (Output Data Rate) alignment
   write_register8({ .bank = 2, .reg = odr_align_en, .val = 1 });  // aligns ODR
+
+  // Initialize magnetometer in 20Hz continuous mode
+  init_mag();
 }
 
 void icm20948::auto_offsets()
@@ -228,6 +176,22 @@ void icm20948::set_acc_range(acc_range p_acc_range)
   m_reg_val &= ~(0x06);
   m_reg_val |= (p_acc_range << 1);
   write_register8({ .bank = 2, .reg = accel_config, .val = m_reg_val });
+
+  // Update the acc_range_factor based on selected range
+  switch(p_acc_range) {
+    case acc_range_2g:
+      m_acc_range_factor = 1;
+      break;
+    case acc_range_4g:
+      m_acc_range_factor = 2;
+      break;
+    case acc_range_8g:
+      m_acc_range_factor = 4;
+      break;
+    case acc_range_16g:
+      m_acc_range_factor = 8;
+      break;
+  }
 }
 
 void icm20948::set_acc_dlpf(digital_lowpass_filter p_dlpf)
@@ -246,11 +210,6 @@ void icm20948::set_acc_dlpf(digital_lowpass_filter p_dlpf)
   write_register8({ .bank = 2, .reg = accel_config, .val = m_reg_val });
 }
 
-void icm20948::set_acc_sample_rate_div(uint16_t p_acc_spl_rate_div)
-{
-  write_register16(
-    { .bank = 2, .reg = accel_smplrt_div_1, .val = p_acc_spl_rate_div });
-}
 
 void icm20948::enable_gyro(bool p_enable_gyro)
 {
@@ -269,6 +228,22 @@ void icm20948::set_gyro_range(gyro_range p_gyro_range)
   m_reg_val &= ~(0x06);
   m_reg_val |= (static_cast<hal::byte>(p_gyro_range) << 1);
   write_register8({ .bank = 2, .reg = gyro_config_1, .val = m_reg_val });
+
+  // Update the gyro_range_factor based on selected range
+  switch(p_gyro_range) {
+    case gyro_range_250:
+      m_gyro_range_factor = 1;
+      break;
+    case gyro_range_500:
+      m_gyro_range_factor = 2;
+      break;
+    case gyro_range_1000:
+      m_gyro_range_factor = 4;
+      break;
+    case gyro_range_2000:
+      m_gyro_range_factor = 8;
+      break;
+  }
 }
 
 void icm20948::set_gyro_dlpf(digital_lowpass_filter p_dlpf)
@@ -287,11 +262,6 @@ void icm20948::set_gyro_dlpf(digital_lowpass_filter p_dlpf)
   write_register8({ .bank = 2, .reg = gyro_config_1, .val = m_reg_val });
 }
 
-void icm20948::set_gyro_sample_rate_div(hal::byte p_gyro_spl_rate_div)
-{
-  write_register8(
-    { .bank = 2, .reg = gyro_smplrt_div, .val = p_gyro_spl_rate_div });
-}
 
 void icm20948::set_temp_dlpf(digital_lowpass_filter p_dlpf)
 {
@@ -397,8 +367,7 @@ icm20948::mag_read_t icm20948::read_magnetometer()
   mag_read.y = static_cast<int16_t>((data[3] << 8) | data[2]);
   mag_read.z = static_cast<int16_t>((data[5] << 8) | data[4]);
 
-  mag_status1();
-  mag_status2();
+  // Check magnetometer status silently
 
   return mag_read;
 }
@@ -422,35 +391,7 @@ icm20948::temp_read_t icm20948::read_temperature()
 
 /********* Power, Sleep, Standby *********/
 
-void icm20948::enable_cycle(cycle p_cycle)
-{
-  m_reg_val = read_register8({ .bank = 0, .reg = lp_config });
-  m_reg_val &= 0x0F;
-  m_reg_val |= static_cast<hal::byte>(p_cycle);
 
-  write_register8({ .bank = 0, .reg = lp_config, .val = m_reg_val });
-}
-
-void icm20948::enable_low_power(bool p_enable_low_power)
-{
-  m_reg_val = read_register8({ .bank = 0, .reg = pwr_mgmt_1 });
-  if (p_enable_low_power) {
-    m_reg_val |= lp_en;
-  } else {
-    m_reg_val &= ~lp_en;
-  }
-  write_register8({ .bank = 0, .reg = pwr_mgmt_1, .val = m_reg_val });
-}
-
-void icm20948::set_gyro_averg_cycle_mode(gyro_avg_low_power p_avg)
-{
-  write_register8({ .bank = 2, .reg = gyro_config_2, .val = p_avg });
-}
-
-void icm20948::set_acc_averg_cycle_mode(acc_avg_low_power p_avg)
-{
-  write_register8({ .bank = 2, .reg = accel_config_2, .val = p_avg });
-}
 
 void icm20948::sleep(bool p_sleep)
 {
@@ -466,36 +407,25 @@ void icm20948::sleep(bool p_sleep)
 
 void icm20948::init_mag()
 {
+  // Enable bypass mode to directly communicate with the magnetometer
   enable_bypass_mode();
+  // Set magnetometer to continuous mode at 20Hz
   set_mag_op_mode(ak09916_cont_mode_20hz);
 }
 
 void icm20948::set_mag_op_mode(ak09916_op_mode p_op_mode)
 {
-  write_ak09916_register8(ak09916_cntl_2, p_op_mode);
+  // Set magnetometer operation mode directly
+  hal::write(*m_i2c,
+             ak09916_address,
+             std::array<hal::byte, 2>{ ak09916_cntl_2, static_cast<hal::byte>(p_op_mode) },
+             hal::never_timeout());
+
   if (p_op_mode != ak09916_pwr_down) {
     enable_mag_data_read(ak09916_hxl, 0x08);
   }
-
-  hal::write(*m_i2c,
-             ak09916_address,
-             std::array<hal::byte, 2>{ ak09916_cntl_2, ak09916_cont_mode_20hz },
-             hal::never_timeout());
 }
 
-void icm20948::write_ak09916_register8(hal::byte p_reg,  // NOLINT
-                                       hal::byte p_val   // NOLINT
-)
-{
-  write_register8({ .bank = 3,
-                    .reg = i2c_slv0_addr,
-                    .val = ak09916_address });  // write AK09916
-  write_register8(
-    { .bank = 3,
-      .reg = i2c_slv0_reg,
-      .val = p_reg });  // define AK09916 register to be written to
-  write_register8({ .bank = 3, .reg = i2c_slv0_do, .val = p_val });
-}
 
 void icm20948::reset_mag()
 {
@@ -507,16 +437,8 @@ void icm20948::reset_mag()
              hal::never_timeout());
 }
 
-hal::byte icm20948::check_mag_mode()
-{
-  enable_bypass_mode();
-  auto const mode =
-    hal::write_then_read<1>(*m_i2c,
-                            ak09916_address,
-                            std::array<hal::byte, 1>{ ak09916_cntl_2 },
-                            hal::never_timeout());
-  return mode[0];
-}
+
+// Private implementation functions
 
 hal::byte icm20948::mag_status1()
 {
@@ -575,19 +497,14 @@ void icm20948::switch_bank(hal::byte p_new_bank)
 {
   if (p_new_bank != m_current_bank) {
     m_current_bank = p_new_bank;
-    m_current_bank = m_current_bank << 4;
-  }
-  auto reg_buffer =
-    hal::write_then_read<1>(*m_i2c,
-                            icm20948_address,
-                            std::array<hal::byte, 1>{ reg_bank_sel },
-                            hal::never_timeout());
+    hal::byte bank_value = m_current_bank << 4;
 
-  hal::byte reg_val = reg_buffer[0];
-  hal::write(*m_i2c,
-             icm20948_address,
-             std::array<hal::byte, 2>{ reg_val, m_current_bank },
-             hal::never_timeout());
+    // Write to bank select register with correct values
+    hal::write(*m_i2c,
+               icm20948_address,
+               std::array<hal::byte, 2>{ reg_bank_sel, bank_value },
+               hal::never_timeout());
+  }
 }
 
 void icm20948::write_register8(write8_param p_param)
@@ -626,16 +543,13 @@ std::uint16_t icm20948::read_register16(read_param p_param)
 {
   switch_bank(p_param.bank);
 
-  auto msb = hal::write_then_read<1>(*m_i2c,
-                                     icm20948_address,
-                                     std::array<hal::byte, 1>{ p_param.reg },
-                                     hal::never_timeout());
-  auto lsb = hal::write_then_read<1>(*m_i2c,
+  // Read both bytes at once since they should be consecutive registers
+  auto data = hal::write_then_read<2>(*m_i2c,
                                      icm20948_address,
                                      std::array<hal::byte, 1>{ p_param.reg },
                                      hal::never_timeout());
 
-  std::uint16_t reg_16_value = (msb[0] << 8) | lsb[0];
+  std::uint16_t reg_16_value = (data[0] << 8) | data[1];
   return reg_16_value;
 }
 
