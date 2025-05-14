@@ -33,7 +33,7 @@ void application(resource_list& p_map)
   int8_t alt_offset = 0;
   mpl_device.set_altitude_offset(alt_offset);
 
-  // Set sea level pressure to 30 Hg
+  // Set sea level pressure to standard atmospheric pressure (101325 Pa)
   float slp = 101325;  // Default is 101325 Pa
   mpl_device.set_sea_pressure(slp);
 

@@ -14,93 +14,110 @@
 
 #pragma once
 
+#include <cstdint>
+
 #include <libhal/i2c.hpp>
-#include <libhal/timeout.hpp>
 #include <libhal/units.hpp>
 
 namespace hal::sensor {
 
+/**
+ * @brief Driver for the MPL3115A2 pressure/altitude/temperature sensor
+ */
 class mpl3115a2
 {
 public:
-  /* Maximum number of retries for polling operations. */
-  static constexpr uint16_t default_max_polling_retries = 10000;
-
-  /* Keep track of the current set mode bit in ctrl_reg1 */
-  enum class mode
+  /**
+   * @brief Defines the operation mode of the sensor
+   */
+  enum class mode : hal::byte
   {
+    /// Barometer mode for pressure readings
     barometer = 0,
+    /// Altimeter mode for altitude readings
     altimeter = 1,
   };
 
-  struct temperature_read_t
+  /**
+   * @brief Stores the temperature data from temperature readings.
+   */
+  struct temperature_results
   {
-    celsius temperature;
-  };
-
-  struct pressure_read_t
-  {
-    float pressure;  // Pascals (Pa)
-  };
-
-  struct altitude_read_t
-  {
-    meters altitude;
+    hal::celsius temperature;
   };
 
   /**
-   * @brief Construct mpl3115a2 sensor
+   * @brief Stores the pressure data from pressure readings.
+   */
+  struct pressure_results
+  {
+    /// Pressure is in units of Pascals
+    float pressure;
+  };
+
+  /**
+   * @brief Stores the altitude data from altitude readings.
+   */
+  struct altitude_results
+  {
+    hal::meters altitude;
+  };
+
+  /**
+   * @brief Construct a mpl3115a2 driver
    *
-   * This function performs the following steps during startup configuration:
-   *   - Perform WHOAMI check
-   *   - Trigger reset and wait for completion
-   *   - Set altimeter mode
-   *   - Set oversampling ratio to 2^128 (OS128)
-   *   - Enable data ready events for pressure/altitude and temperature
+   * @param p_i2c - The driver for the I2C bus the MPL3115A2 is connected to.
    *
-   * @param p_i2c The I2C peripheral used for communication with the device.
+   * @throws hal::no_such_device - when an invalid MPL3115A2 device is detected.
+   * MPL3115A2 devices have a read-only ID register which allows a microcontroller
+   * to determine what device it is connected to. This register will be read and
+   * if it does not match the expected value, this exception is thrown.
    */
   explicit mpl3115a2(hal::i2c& p_i2c);
 
   /**
-   * @brief Read pressure data from out_t_msb_r and out_t_lsb_r
-   *        and perform temperature conversion to celsius.
+   * @brief Reads the temperature
+   *
+   * @returns the temperature in celsius.
    */
-  [[nodiscard]] temperature_read_t read_temperature();
+  [[nodiscard]] temperature_results read_temperature();
 
   /**
-   * @brief Read pressure data from out_p_msb_r, out_p_csb_r, and out_p_lsb_r
-   *        and perform pressure conversion to kilopascals.
+   * @brief Reads the pressure
+   *
+   * @returns the pressure in Pascals.
    */
-  [[nodiscard]] pressure_read_t read_pressure();
+  [[nodiscard]] pressure_results read_pressure();
 
   /**
-   * @brief Read altitude data from out_p_msb_r, out_p_csb_r, and out_p_lsb_r
-   *        and perform altitude conversion to meters.
+   * @brief Reads the altitude
+   *
+   * @returns the altitude in meters.
    */
-  [[nodiscard]] altitude_read_t read_altitude();
+  [[nodiscard]] altitude_results read_altitude();
 
   /**
    * @brief Set sea level pressure (Barometric input for altitude calculations)
-   *        in bar_in_msb_r and bar_in_lsb_r registers
-   * @param p_sea_level_pressure: Sea level pressure in Pascals.
+   *
+   * @param p_sea_level_pressure - Sea level pressure in Pascals.
    *        Default value on startup is 101,326 Pa.
    */
   void set_sea_pressure(float p_sea_level_pressure);
 
   /**
-   * @brief Set altitude offset in off_h_r
-   * @param p_offset Offset value in meters, from -127 to 128
+   * @brief Set altitude offset
+   *
+   * @param p_offset - Offset value in meters, from -127 to 128
    */
   void set_altitude_offset(int8_t p_offset);
 
 private:
-  /* The I2C peripheral used for communication with the device. */
+  /// Maximum number of retries for polling operations
+  static constexpr uint16_t default_max_polling_retries = 10000;
+  /// The I2C peripheral used for communication with the device
   hal::i2c* m_i2c;
-
-  /* Variable to track current sensor mode to determine if CTRL_REG1 ALT flag
-   * needs to be set. */
-  mode m_sensor_mode = mode::barometer;
+  /// Variable to track current sensor mode
+  mode m_sensor_mode;
 };
 
 }  // namespace hal::sensor
