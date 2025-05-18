@@ -20,6 +20,10 @@ libhal_build_demos(
   DEMOS
   #bmp180
   icm20948
+  icm20948_alt
+  icm20948_simple
+  icm20948_direct
+  icm20948_mag_debug
   mpl3115a2
   mpu6050
   tmp102

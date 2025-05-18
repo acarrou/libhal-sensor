@@ -25,6 +25,17 @@ namespace {
 static constexpr hal::byte icm20948_address = 0x69;
 static constexpr hal::byte ak09916_address = 0x0C;
 
+// Utility function for short delays (busy-wait) without using volatile
+inline void short_delay(int cycles)
+{
+  int counter = 0;
+  while (counter < cycles) {
+    counter++;
+    // Prevent optimization with compiler barrier
+    asm volatile("" : "+r" (counter) : : "memory");
+  }
+}
+
 /* Registers ICM20948 USER BANK 0 */
 constexpr hal::byte who_am_i = 0x00;
 constexpr hal::byte pwr_mgmt_1 = 0x06;
@@ -84,11 +95,21 @@ using namespace std::literals;
 icm20948::icm20948(hal::i2c& p_i2c)
   : m_i2c(&p_i2c)
 {
+  // Start with known state
   m_current_bank = 0;
-  reset_icm20948();
-  reset_mag();
+  
+  // Make sure we're in bank 0 before we begin
+  hal::write(*m_i2c, icm20948_address, 
+             std::array<hal::byte, 2>{ reg_bank_sel, 0x00 }, 
+             hal::never_timeout());
 
-  // Check device ID
+  // Reset the device and wait for it to stabilize
+  reset_icm20948();
+  
+  // Short delay to allow reset to complete
+  short_delay(100000);
+  
+  // Check device ID to make sure we're communicating with the right device
   if (auto id = whoami(); id != who_am_i_content) {
     hal::safe_throw(hal::no_such_device(id, this));
   }
@@ -112,17 +133,32 @@ icm20948::icm20948(hal::i2c& p_i2c)
   enable_acc(true);
   enable_gyro(true);
 
-  // Configure sensor ranges
+  // Configure sensor ranges - starting with the safest settings
   set_acc_range(acc_range_2g);    // Initialize with 2g range
   set_gyro_range(gyro_range_250); // Initialize with 250 dps range
+  
+  // Set digital low-pass filters
   set_acc_dlpf(dlpf_6);          // Set low noise filter
   set_gyro_dlpf(dlpf_6);         // Set low noise filter
 
   // Enable ODR (Output Data Rate) alignment
   write_register8({ .bank = 2, .reg = odr_align_en, .val = 1 });  // aligns ODR
 
-  // Initialize magnetometer in 20Hz continuous mode
-  init_mag();
+  // After configuring main IMU, initialize and reset the magnetometer
+  try {
+    reset_mag();
+    // Short delay to allow mag reset to complete
+    short_delay(50000);
+    
+    // Initialize magnetometer in continuous mode
+    init_mag();
+    
+    // Small delay after initialization
+    short_delay(50000);
+  }
+  catch (...) {
+    // Ignore magnetometer errors since the sensor can work without it
+  }
 }
 
 void icm20948::auto_offsets()
@@ -335,40 +371,104 @@ icm20948::gyro_read_t icm20948::read_gyroscope()
 
 icm20948::mag_read_t icm20948::read_magnetometer()
 {
-  constexpr int max_polling_attempts = 1000;
-
-  mag_read_t mag_read{};
-  int polling_attempts = 0;
-
-  while (true) {
-    auto status =
-      hal::write_then_read<1>(*m_i2c,
+  constexpr int max_polling_attempts = 20; // Reduced max attempts to avoid blocking too long
+  mag_read_t mag_read = { 0, 0, 0 }; // Initialize with zeros
+  
+  try {
+    // Ensure bypass mode is enabled
+    enable_bypass_mode();
+    
+    // Make sure magnetometer is in continuous measurement mode
+    // This is very important - sometimes it can get stuck in power down
+    try {
+      // First check if magnetometer is responsive
+      auto id1 = whoami_ak09916_wia1_direct();
+      auto id2 = whoami_ak09916_wia2_direct();
+      
+      if (id1 != 0x48 || id2 != 0x09) {
+        // If not responding correctly, try reinitializing
+        reset_mag();
+        init_mag();
+      } else {
+        // Check current mode by reading status
+        auto status = mag_status1();
+        
+        // If data never seems ready, reinitialize
+        if ((status & 0x01) == 0) {
+          set_mag_op_mode(ak09916_cont_mode_100hz);
+          short_delay(10000);
+        }
+      }
+    } catch (...) {
+      // If any error occurs, try to reinitialize
+      try {
+        reset_mag();
+        init_mag();
+      } catch (...) {
+        // If reinit fails, return zeros
+        return mag_read;
+      }
+    }
+    
+    int polling_attempts = 0;
+    hal::byte status_value = 0;
+    
+    // Loop until data is ready
+    while (polling_attempts < max_polling_attempts) {
+      auto status =
+        hal::write_then_read<1>(*m_i2c,
+                                ak09916_address,
+                                std::array<hal::byte, 1>{ ak09916_status_1 },
+                                hal::never_timeout());
+      
+      status_value = status[0];
+      
+      // Check if data ready bit is set
+      if (status_value & 0x01) {
+        break;
+      }
+      
+      // Small delay between polling attempts
+      short_delay(1000);
+      
+      polling_attempts++;
+    }
+    
+    // Read Mag Data - note in AK09916 the bytes are little-endian
+    auto const data =
+      hal::write_then_read<6>(*m_i2c,
                               ak09916_address,
-                              std::array<hal::byte, 1>{ ak09916_status_1 },
+                              std::array<hal::byte, 1>{ ak09916_hxl },
                               hal::never_timeout());
-
-    if (status[0] & 0x01) {  // Check if data ready bit is set
-      break;
+    
+    // Check for magnetometer overflow
+    auto status2 = mag_status2();
+    
+    // If HOFL bit is set (bit 3), data is invalid due to overflow
+    if (status2 & 0x08) {
+      // Return zeros instead of invalid data
+      return mag_read;
     }
-
-    if (++polling_attempts > max_polling_attempts) {
-      hal::safe_throw(hal::timed_out(this));
-    }
+    
+    // AK09916 registers are in little-endian format 
+    // (low byte first, then high byte)
+    mag_read.x = static_cast<int16_t>((data[1] << 8) | data[0]);
+    mag_read.y = static_cast<int16_t>((data[3] << 8) | data[2]);
+    mag_read.z = static_cast<int16_t>((data[5] << 8) | data[4]);
+    
+    // Apply scaling factor (0.15 μT/LSB)
+    constexpr float mag_scale = 0.15f;
+    mag_read.x *= mag_scale;
+    mag_read.y *= mag_scale;
+    mag_read.z *= mag_scale;
   }
-
-  // Read Mag Data
-  auto const data =
-    hal::write_then_read<6>(*m_i2c,
-                            ak09916_address,
-                            std::array<hal::byte, 1>{ ak09916_hxl },
-                            hal::never_timeout());
-
-  mag_read.x = static_cast<int16_t>((data[1] << 8) | data[0]);
-  mag_read.y = static_cast<int16_t>((data[3] << 8) | data[2]);
-  mag_read.z = static_cast<int16_t>((data[5] << 8) | data[4]);
-
-  // Check magnetometer status silently
-
+  catch (...) {
+    // If anything fails, return zeros
+    mag_read.x = 0;
+    mag_read.y = 0;
+    mag_read.z = 0;
+  }
+  
   return mag_read;
 }
 
@@ -407,10 +507,40 @@ void icm20948::sleep(bool p_sleep)
 
 void icm20948::init_mag()
 {
-  // Enable bypass mode to directly communicate with the magnetometer
+  // Ensure bypass mode is enabled to directly communicate with the magnetometer
   enable_bypass_mode();
-  // Set magnetometer to continuous mode at 20Hz
-  set_mag_op_mode(ak09916_cont_mode_20hz);
+  
+  // Short delay to ensure bypass mode is active
+  short_delay(50000);
+  
+  // Try to verify magnetometer is present by reading the WIA registers
+  try {
+    auto id1 = whoami_ak09916_wia1_direct();
+    auto id2 = whoami_ak09916_wia2_direct();
+    
+    // Check if the magnetometer is responding correctly
+    if (id1 != 0x48 || id2 != 0x09) {
+      // If magnetometer doesn't respond correctly, don't try to set it up further
+      return;
+    }
+    
+    // Set magnetometer to continuous measurement mode at 100Hz for better responsiveness
+    set_mag_op_mode(ak09916_cont_mode_100hz);
+    
+    // Longer delay to let the magnetometer start up
+    short_delay(50000);
+    
+    // Read once to make sure it's working
+    auto status1 = mag_status1();
+    if ((status1 & 0x01) == 0) {
+      // If data not ready, wait a bit more
+      short_delay(100000);
+    }
+  }
+  catch (...) {
+    // If reading fails, don't try to set it up further
+    return;
+  }
 }
 
 void icm20948::set_mag_op_mode(ak09916_op_mode p_op_mode)
@@ -429,12 +559,38 @@ void icm20948::set_mag_op_mode(ak09916_op_mode p_op_mode)
 
 void icm20948::reset_mag()
 {
+  // First ensure we can talk to the magnetometer through I2C bypass
   enable_bypass_mode();
-
-  hal::write(*m_i2c,
-             ak09916_address,
-             std::array<hal::byte, 2>{ ak09916_cntl_3, 0x01 },  // Soft Reset
-             hal::never_timeout());
+  
+  // Longer delay to ensure bypass mode is active
+  short_delay(50000);
+  
+  // Set magnetometer to power down mode first
+  try {
+    hal::write(*m_i2c,
+              ak09916_address,
+              std::array<hal::byte, 2>{ ak09916_cntl_2, 0x00 },  // Power down mode
+              hal::never_timeout());
+  } catch (...) {
+    // If we can't communicate, just continue with reset
+  }
+  
+  // Short delay
+  short_delay(20000);
+  
+  // Perform a soft reset of the magnetometer
+  try {
+    hal::write(*m_i2c,
+              ak09916_address,
+              std::array<hal::byte, 2>{ ak09916_cntl_3, 0x01 },  // Soft Reset
+              hal::never_timeout());
+  } catch (...) {
+    // If reset fails, just return - we'll try again during init
+    return;
+  }
+  
+  // Give magnetometer more time to reset
+  short_delay(100000);
 }
 
 
@@ -555,12 +711,43 @@ std::uint16_t icm20948::read_register16(read_param p_param)
 
 void icm20948::reset_icm20948()
 {
-  write_register8({ .bank = 0, .reg = pwr_mgmt_1, .val = icm_reset });
+  // Make sure we're in bank 0
+  switch_bank(0);
+  
+  // Set the device reset bit
+  hal::write(*m_i2c, icm20948_address, 
+             std::array<hal::byte, 2>{ pwr_mgmt_1, icm_reset }, 
+             hal::never_timeout());
+             
+  // Reset sets bit 7 and also selects the best available clock source (bit 0)
+  // Delay to allow reset to complete (busy wait)
+  short_delay(50000);
+  
+  // Explicitly clear the sleep bit after reset to ensure the device is awake
+  hal::write(*m_i2c, icm20948_address, 
+             std::array<hal::byte, 2>{ pwr_mgmt_1, 0x01 }, 
+             hal::never_timeout());
+             
+  // Another short delay
+  short_delay(10000);
 }
 
 void icm20948::enable_bypass_mode()
 {
-  write_register8({ .bank = 0, .reg = int_pin_cfg, .val = bypass_en });
+  // Ensure we're in bank 0
+  switch_bank(0);
+  
+  // Read current value of INT_PIN_CFG register
+  auto current_value = read_register8({ .bank = 0, .reg = int_pin_cfg });
+  
+  // Set the bypass enable bit (bit 1) without changing other bits
+  current_value |= bypass_en;
+  
+  // Write the updated value back to the register
+  write_register8({ .bank = 0, .reg = int_pin_cfg, .val = current_value });
+  
+  // Longer delay to let bypass mode activate
+  short_delay(20000);
 }
 
 void icm20948::enable_mag_data_read(hal::byte p_reg,   // NOLINT

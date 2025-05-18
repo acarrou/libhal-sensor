@@ -47,8 +47,12 @@ void initialize_platform(resource_list& p_resources)
                                 hal::serial::settings{
                                   .baud_rate = 115200,
                                 });
-  p_resources.console = &uart0;
 
-  static hal::lpc40::i2c i2c(2);
+  static auto i2c = HAL_CHECK((hal::lpc40::i2c::get(2,
+                                                    hal::i2c::settings{
+                                                      .clock_rate = 100.0_kHz,
+                                                    })));
+
+  p_resources.console = &uart0;
   p_resources.i2c = &i2c;
 }

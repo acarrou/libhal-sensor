@@ -222,6 +222,12 @@ private:
   void enable_mag_data_read(hal::byte p_reg, hal::byte p_bytes);
 
   void reset_icm20948();
+  
+  /* Magnetometer status functions */
+  [[nodiscard]] hal::byte mag_status1();
+  [[nodiscard]] hal::byte mag_status2();
+  [[nodiscard]] hal::byte whoami_ak09916_wia1_direct();
+  [[nodiscard]] hal::byte whoami_ak09916_wia2_direct();
 
   /* The I2C peripheral used for communication with the device. */
   hal::i2c* m_i2c;
